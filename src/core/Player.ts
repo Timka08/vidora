@@ -16,6 +16,7 @@ export default class Player {
   private readonly mediaController: MediaController;
   private readonly subscribers = new Map<VideoEventName, Set<PlayerListener>>();
   private readonly listenedEvents = new Set<VideoEventName>();
+  private readonly nativeListeners = new Map<VideoEventName, EventListener>();
 
   constructor(mediaController: MediaController) {
     this.mediaController = mediaController;
@@ -65,7 +66,29 @@ export default class Player {
 
     if (!this.listenedEvents.has(event)) {
       this.listenedEvents.add(event);
-      this.mediaController.on(event, this.forwardEvent(event));
+      this.nativeListeners.set(event, this.forwardEvent(event));
+      this.mediaController.on(event, this.nativeListeners.get(event)!);
     }
+  }
+
+  off(event: VideoEventName, callback: PlayerListener): void {
+    const listeners = this.subscribers.get(event);
+    if (!listeners) return;
+    listeners.delete(callback);
+    if (listeners.size === 0) {
+      this.mediaController.off(event, this.nativeListeners.get(event)!);
+      this.subscribers.delete(event);
+      this.nativeListeners.delete(event);
+      this.listenedEvents.delete(event);
+    }
+  }
+
+  destroy(): void {
+    for (const event of this.listenedEvents) {
+      this.mediaController.off(event, this.nativeListeners.get(event)!);
+    }
+    this.subscribers.clear();
+    this.nativeListeners.clear();
+    this.listenedEvents.clear();
   }
 }

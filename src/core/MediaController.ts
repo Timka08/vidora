@@ -48,5 +48,9 @@ export default class MediaController {
     on(event: string, callback: EventListenerOrEventListenerObject): void {
         this.video.addEventListener(event, callback);
     }
-}
 
+    off(event: string, callback: EventListenerOrEventListenerObject): void {
+        this.video.removeEventListener(event, callback);
+    }
+    
+}
